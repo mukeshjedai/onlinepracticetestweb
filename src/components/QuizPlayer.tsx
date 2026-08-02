@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CategoryId, Question } from "@/data/questions";
 import { saveProgressUpdate } from "@/lib/progress-api";
@@ -15,6 +16,8 @@ type QuizPlayerProps = {
 type AnswerMap = Record<number, number>;
 
 export function QuizPlayer({ title, testId, category, questions }: QuizPlayerProps) {
+  const { data: session, status: authStatus } = useSession();
+  const signedIn = Boolean(session?.user?.email);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [finished, setFinished] = useState(false);
@@ -43,23 +46,34 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
     progressPercent?: number;
     scorePercent?: number;
   }) {
+    // Never persist progress for anonymous users (all environments)
+    if (!signedIn) return;
+
     try {
       setSaveError(null);
-      await saveProgressUpdate({
+      const result = await saveProgressUpdate({
         testId,
         title,
         category,
         totalQuestions: questions.length,
         ...payload,
       });
+      if (result === null) {
+        // 401 / not signed in
+        return;
+      }
     } catch (error) {
       console.error(error);
       setSaveError("Could not save progress to the database.");
     }
   }
 
-  // Mark test as started as soon as the quiz opens
   useEffect(() => {
+    if (authStatus === "loading") return;
+    if (!signedIn) {
+      startedRef.current = false;
+      return;
+    }
     if (startedRef.current) return;
     startedRef.current = true;
     void persist({
@@ -69,7 +83,7 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
       progressPercent: 0,
       scorePercent: 0,
     });
-  }, [testId]);
+  }, [testId, signedIn, authStatus]);
 
   function selectOption(option: number) {
     if (hasSelection) return;
@@ -83,7 +97,7 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
     }, 0);
 
     void persist({
-      status: nextAnswered >= questions.length ? "in_progress" : "in_progress",
+      status: "in_progress",
       answeredCount: nextAnswered,
       correctCount: nextCorrect,
       progressPercent: Math.round((nextAnswered / questions.length) * 100),
@@ -109,8 +123,7 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
       return;
     }
 
-    const nextIndex = index + 1;
-    setIndex(nextIndex);
+    setIndex((i) => i + 1);
     void persist({
       status: "in_progress",
       answeredCount,
@@ -139,7 +152,16 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
           Score {scorePercent}% —{" "}
           {passed ? "Great work. You're on track." : "Keep practising the weaker topics."}
         </p>
-        <p className="mt-2 text-sm text-success">Progress saved to your dashboard.</p>
+        {signedIn ? (
+          <p className="mt-2 text-sm text-success">Progress saved to your dashboard.</p>
+        ) : (
+          <p className="mt-2 text-sm text-muted">
+            <Link href="/login?callbackUrl=/dashboard" className="font-semibold text-harbour">
+              Sign in
+            </Link>{" "}
+            to save progress to your dashboard.
+          </p>
+        )}
         {saveError && <p className="mt-2 text-sm text-danger">{saveError}</p>}
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-sand">
           <div
@@ -155,14 +177,17 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
               setIndex(0);
               setFinished(false);
               startedRef.current = false;
-              void persist({
-                status: "started",
-                answeredCount: 0,
-                correctCount: 0,
-                progressPercent: 0,
-                scorePercent: 0,
-              });
-              startedRef.current = true;
+              if (signedIn) {
+                void persist({
+                  status: "started",
+                  answeredCount: 0,
+                  correctCount: 0,
+                  progressPercent: 0,
+                  scorePercent: 0,
+                }).then(() => {
+                  startedRef.current = true;
+                });
+              }
             }}
             className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
           >
@@ -191,7 +216,11 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-navy">Live progress</p>
-            <p className="text-xs text-muted">Saved as you answer each question</p>
+            <p className="text-xs text-muted">
+              {signedIn
+                ? "Saved as you answer each question"
+                : "Sign in to save progress to your dashboard"}
+            </p>
           </div>
           <div className="text-right">
             <span className="inline-flex min-w-16 items-center justify-center rounded-full bg-navy px-3 py-1 text-sm font-bold text-white">
@@ -208,6 +237,14 @@ export function QuizPlayer({ title, testId, category, questions }: QuizPlayerPro
             style={{ width: `${completionPercent}%` }}
           />
         </div>
+        {!signedIn && authStatus !== "loading" && (
+          <p className="mt-2 text-xs text-muted">
+            <Link href={`/login?callbackUrl=/practice/${testId}`} className="font-semibold text-harbour">
+              Sign in with Google
+            </Link>{" "}
+            to track this test on your dashboard.
+          </p>
+        )}
         {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
       </div>
 

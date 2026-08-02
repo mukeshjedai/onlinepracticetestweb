@@ -121,14 +121,14 @@ export function DashboardClient({ isPremium }: { isPremium: boolean }) {
           </h1>
           <p className="mt-2 text-muted">
             {session?.user?.email ??
-              "Your progress is saved in the database for this browser session."}
+              "Sign in to view and save your practice progress."}
           </p>
           {!session?.user && (
             <Link
               href="/login?callbackUrl=/dashboard"
               className="mt-3 inline-flex text-sm font-semibold text-harbour"
             >
-              Sign in with Google to keep progress on your account →
+              Sign in with Google to track progress →
             </Link>
           )}
         </div>
@@ -165,8 +165,8 @@ export function DashboardClient({ isPremium }: { isPremium: boolean }) {
         Progress by practice test
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-muted">
-        Status updates when you open a test, and the percentage updates as you answer
-        each question (saved to the database).
+        Progress is saved only while you are signed in. Percentage updates as you answer
+        each question.
       </p>
 
       <div className="mt-8 space-y-12">

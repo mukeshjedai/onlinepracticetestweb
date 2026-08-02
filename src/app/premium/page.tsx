@@ -77,20 +77,28 @@ export default async function PremiumPage({
                 <p className="mt-2 font-display text-5xl text-navy">{pricing.label}</p>
                 <p className="mt-2 text-sm text-muted">{pricing.tagline}</p>
                 {!signedIn && (
-                  <p className="mt-4 rounded-2xl bg-sand px-3 py-2 text-xs text-muted">
-                    Tip:{" "}
+                  <p className="mt-4 rounded-2xl bg-sand px-3 py-2 text-sm text-muted">
+                    You must{" "}
                     <Link href="/login?callbackUrl=/premium" className="font-semibold text-harbour">
-                      Sign in with Google
+                      sign in with Google
                     </Link>{" "}
-                    first so Premium is linked to your account email.
+                    before purchasing Premium. Checkout always continues on Stripe.
                   </p>
                 )}
                 <div className="mt-6">
-                  <CheckoutButton />
+                  {signedIn ? (
+                    <CheckoutButton />
+                  ) : (
+                    <Link
+                      href="/login?callbackUrl=/premium"
+                      className="inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3 text-sm font-bold text-navy transition hover:bg-gold-soft"
+                    >
+                      Sign in to buy Premium
+                    </Link>
+                  )}
                 </div>
                 <p className="mt-4 text-center text-xs text-muted">
-                  Secure checkout powered by Stripe. In local demo mode without Stripe
-                  keys, Premium unlocks instantly for testing.
+                  Secure payment via Stripe Checkout — required in every environment.
                 </p>
                 <Link
                   href="/#practice"

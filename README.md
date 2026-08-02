@@ -22,30 +22,37 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Without Stripe keys, clicking **Buy Premium** unlocks Premium instantly for local testing.
 
+## Deployment topology
+
+| App | Host | URL |
+|-----|------|-----|
+| Next.js frontend | Vercel | https://onlinepracticetest.vercel.app |
+| ASP.NET API/MVC | MonsterASP / runasp | http://citizenshiptest.runasp.net |
+
+Browser calls **same-origin** Next.js `/api/*`. Next.js server routes proxy authenticated requests to ASP.NET using `X-Api-Key` + `X-User-Email`.
+
 ## Auth & Stripe setup
 
-Copy `.env.example` to `.env.local` and fill in:
+Copy `.env.example` to `.env.local` (and set the same on Vercel):
 
+- `NEXT_PUBLIC_APP_URL` / `AUTH_URL` → `https://onlinepracticetest.vercel.app` in production
+- `ASPNET_API_URL` → `http://citizenshiptest.runasp.net`
+- `ASPNET_API_KEY` → must match ASP.NET `ApiAuth:ApiKey`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-- `AUTH_SECRET` / `AUTH_URL`
+- `AUTH_SECRET`
 - `STRIPE_SECRET_KEY`
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (optional for this Checkout flow)
-- `STRIPE_WEBHOOK_SECRET` (optional; webhook logs completed sessions)
 - `PREMIUM_TOKEN_SECRET`
-- `NEXT_PUBLIC_APP_URL`
 
-In Google Cloud Console, add this Authorized redirect URI:
+Google redirect URI (production):
 
-`http://localhost:3000/api/auth/callback/google`
-
-(and your production URL equivalent when deployed).
+`https://onlinepracticetest.vercel.app/api/auth/callback/google`
 
 ## Project layout
 
-- `src/app` — pages and API routes
+- `src/app` — pages and API routes (BFF to ASP.NET)
 - `src/components` — landing, quiz, checkout UI
 - `src/data` — practice questions and test catalogue
 - `public/images` — website imagery
 
-The original ASP.NET MVC app remains in the repo root. This `web` app is the new frontend experience.
+ASP.NET (repo root) exposes authenticated JSON APIs under `/api/*` (`X-Api-Key` required).
 "# onlinepracticetestweb" 

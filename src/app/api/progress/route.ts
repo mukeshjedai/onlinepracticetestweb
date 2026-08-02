@@ -1,26 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOwnerKey } from "@/lib/owner";
+import { AspNetApiError, aspNetFetch } from "@/lib/aspnet-client";
+import { useAspNetBackend } from "@/lib/config";
+import { getSignedInEmail } from "@/lib/owner";
 import { listProgress, upsertProgress } from "@/lib/progress-db";
 
 export async function GET() {
   try {
-    const ownerKey = await getOwnerKey();
-    const items = await listProgress(ownerKey);
-    return NextResponse.json({ ownerKey, items });
+    const email = await getSignedInEmail();
+    if (!email) {
+      return NextResponse.json(
+        { ownerKey: null, items: [], requiresAuth: true },
+        { status: 200 },
+      );
+    }
+
+    if (useAspNetBackend()) {
+      const data = await aspNetFetch<{ ownerKey: string; items: unknown[] }>(
+        "/api/progress",
+        { searchParams: { ownerKey: email } },
+      );
+      return NextResponse.json(data);
+    }
+
+    const items = await listProgress(email);
+    return NextResponse.json({ ownerKey: email, items });
   } catch (error) {
     console.error("GET /api/progress", error);
+    const status = error instanceof AspNetApiError ? error.status : 500;
     return NextResponse.json(
-      { error: "Unable to load progress" },
-      { status: 500 },
+      { error: error instanceof Error ? error.message : "Unable to load progress" },
+      { status },
     );
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const ownerKey = await getOwnerKey();
+    const email = await getSignedInEmail();
+    if (!email) {
+      return NextResponse.json(
+        { error: "Sign in required to save progress.", requiresAuth: true },
+        { status: 401 },
+      );
+    }
 
+    const body = await req.json();
     const testId = String(body.testId || "");
     const title = String(body.title || "");
     const category = String(body.category || "");
@@ -45,8 +69,8 @@ export async function POST(req: NextRequest) {
       Math.round((correctCount / totalQuestions) * 100),
     );
 
-    const item = await upsertProgress({
-      ownerKey,
+    const payload = {
+      ownerKey: email,
       testId,
       title,
       category,
@@ -57,14 +81,24 @@ export async function POST(req: NextRequest) {
       progressPercent:
         status === "completed" ? 100 : body.progressPercent ?? progressPercent,
       scorePercent: body.scorePercent ?? scorePercent,
-    });
+    };
 
+    if (useAspNetBackend()) {
+      const data = await aspNetFetch<{ item: unknown }>("/api/progress", {
+        method: "POST",
+        body: payload,
+      });
+      return NextResponse.json(data);
+    }
+
+    const item = await upsertProgress(payload);
     return NextResponse.json({ item });
   } catch (error) {
     console.error("POST /api/progress", error);
+    const status = error instanceof AspNetApiError ? error.status : 500;
     return NextResponse.json(
-      { error: "Unable to save progress" },
-      { status: 500 },
+      { error: error instanceof Error ? error.message : "Unable to save progress" },
+      { status },
     );
   }
 }

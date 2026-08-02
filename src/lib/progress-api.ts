@@ -50,12 +50,15 @@ export async function saveProgressUpdate(payload: {
   correctCount: number;
   progressPercent?: number;
   scorePercent?: number;
-}) {
+}): Promise<TestProgressRecord | null> {
   const res = await fetch("/api/progress", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  if (res.status === 401) {
+    return null;
+  }
   if (!res.ok) {
     throw new Error("Failed to save progress");
   }

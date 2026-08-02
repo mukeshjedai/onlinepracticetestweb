@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Footer } from "@/components/Footer";
@@ -9,17 +10,31 @@ import { SiteHeader } from "@/components/SiteHeader";
 function SuccessInner() {
   const params = useSearchParams();
   const sessionId = params.get("session_id");
-  const dev = params.get("dev") === "1";
+  const { data: session, status: authStatus } = useSession();
   const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
   const [message, setMessage] = useState("Confirming your Premium access…");
 
   useEffect(() => {
     async function unlock() {
+      if (authStatus === "loading") return;
+
+      if (!session?.user) {
+        setStatus("error");
+        setMessage("Sign in with the same Google account you used for checkout.");
+        return;
+      }
+
+      if (!sessionId) {
+        setStatus("error");
+        setMessage("Missing Stripe session. Please complete payment via Stripe checkout.");
+        return;
+      }
+
       try {
         const res = await fetch("/api/unlock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, dev }),
+          body: JSON.stringify({ sessionId }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unlock failed");
@@ -31,7 +46,7 @@ function SuccessInner() {
       }
     }
     void unlock();
-  }, [sessionId, dev]);
+  }, [sessionId, session?.user, authStatus]);
 
   return (
     <div className="mx-auto max-w-xl rounded-[1.75rem] border border-line bg-surface p-8 text-center shadow-sm">
@@ -43,12 +58,21 @@ function SuccessInner() {
       </h1>
       <p className="mt-4 text-muted">{message}</p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link
-          href="/#practice"
-          className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
-        >
-          Start premium tests
-        </Link>
+        {status === "error" && !session?.user && sessionId ? (
+          <Link
+            href={`/login?callbackUrl=${encodeURIComponent(`/success?session_id=${sessionId}`)}`}
+            className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+          >
+            Sign in to activate
+          </Link>
+        ) : (
+          <Link
+            href="/#practice"
+            className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+          >
+            Start premium tests
+          </Link>
+        )}
         <Link
           href="/premium"
           className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-navy"

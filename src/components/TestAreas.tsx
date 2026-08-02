@@ -33,8 +33,7 @@ export function TestAreas({ isPremium }: TestAreasProps) {
           </h2>
           <p className="mt-4 text-muted">
             <span className="font-semibold text-ink">Australia and its people</span> is free.
-            Other sections are Premium. Opening a test marks it as started; each answer
-            updates your progress in the database.
+            Other sections are Premium. Sign in to save progress as you practise.
           </p>
         </div>
 

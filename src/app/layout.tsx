@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Literata } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/components/AuthProvider";
+import { getGoogleClientId } from "@/lib/google-client";
 import "./globals.css";
 
 const GOOGLE_ADS_ID = "AW-16601595902";
@@ -51,7 +52,7 @@ export default function RootLayout({
             gtag('config', '${GOOGLE_ADS_ID}');
           `}
         </Script>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider googleClientId={getGoogleClientId()}>{children}</AuthProvider>
       </body>
     </html>
   );

@@ -1,131 +1,28 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import {
-  getRecentGoogleAccounts,
-  type RecentGoogleAccount,
-} from "@/lib/recent-accounts";
+import { promptGoogleOneTap } from "@/components/GoogleOneTap";
 
 export function LoginGooglePanel({ callbackUrl = "/" }: { callbackUrl?: string }) {
-  const [accounts, setAccounts] = useState<RecentGoogleAccount[]>([]);
-  const [busyEmail, setBusyEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    setAccounts(getRecentGoogleAccounts());
-  }, []);
-
-  async function continueWithGoogle(loginHint?: string) {
-    setBusyEmail(loginHint ?? "__other__");
-    try {
-      await signIn(
-        "google",
-        { callbackUrl },
-        loginHint
-          ? { login_hint: loginHint, prompt: "select_account" }
-          : { prompt: "select_account" },
-      );
-    } finally {
-      setBusyEmail(null);
-    }
-  }
-
-  const visibleAccounts = accounts.slice(0, 2);
-  const moreCount = Math.max(0, accounts.length - visibleAccounts.length);
-
   return (
-    <div className="mt-8 overflow-hidden rounded-2xl border border-[#3c4043] bg-[#1f1f1f] text-white shadow-lg">
-      <div className="flex items-center gap-3 border-b border-[#3c4043] px-4 py-3">
+    <div className="mt-8 space-y-3">
+      <button
+        type="button"
+        onClick={() => {
+          const ready = promptGoogleOneTap();
+          if (!ready) {
+            void signIn("google", { callbackUrl }, { prompt: "select_account" });
+          }
+        }}
+        className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-navy transition hover:border-harbour/40 hover:shadow-sm"
+      >
         <GoogleMark />
-        <p className="min-w-0 flex-1 text-[13px] leading-snug text-[#e8eaed]">
-          Sign in to{" "}
-          <span className="font-medium text-white">aussiecitizenshipprep.com.au</span>{" "}
-          with Google
-        </p>
-      </div>
-
-      <div>
-        {visibleAccounts.length === 0 ? (
-          <button
-            type="button"
-            disabled={busyEmail !== null}
-            onClick={() => void continueWithGoogle()}
-            className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-white/5 disabled:opacity-60"
-          >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#3c4043]">
-              <GoogleMark />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-medium text-white">
-                Continue with Google
-              </span>
-              <span className="block text-xs text-[#9aa0a6]">
-                Choose your Google Account
-              </span>
-            </span>
-          </button>
-        ) : (
-          visibleAccounts.map((account) => (
-            <button
-              key={account.email}
-              type="button"
-              disabled={busyEmail !== null}
-              onClick={() => void continueWithGoogle(account.email)}
-              className="flex w-full items-center gap-3 border-b border-[#3c4043] px-4 py-3 text-left transition hover:bg-white/5 disabled:opacity-60 last:border-b-0"
-            >
-              {account.image ? (
-                <Image
-                  src={account.image}
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 rounded-full"
-                />
-              ) : (
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#f29900] text-sm font-semibold text-white">
-                  {(account.name || account.email).charAt(0).toUpperCase()}
-                </span>
-              )}
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-white">
-                  {account.name || account.email.split("@")[0]}
-                </span>
-                <span className="block truncate text-xs text-[#9aa0a6]">
-                  {account.email}
-                </span>
-              </span>
-            </button>
-          ))
-        )}
-
-        {moreCount > 0 && (
-          <button
-            type="button"
-            disabled={busyEmail !== null}
-            onClick={() => void continueWithGoogle()}
-            className="w-full border-t border-[#3c4043] px-4 py-3 text-center text-sm text-[#9aa0a6] transition hover:bg-white/5 hover:text-white disabled:opacity-60"
-          >
-            {moreCount} more account{moreCount === 1 ? "" : "s"}
-          </button>
-        )}
-
-        {visibleAccounts.length > 0 && (
-          <button
-            type="button"
-            disabled={busyEmail !== null}
-            onClick={() => void continueWithGoogle()}
-            className="flex w-full items-center gap-3 border-t border-[#3c4043] px-4 py-3.5 text-left transition hover:bg-white/5 disabled:opacity-60"
-          >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#5f6368] text-[#e8eaed]">
-              +
-            </span>
-            <span className="text-sm font-medium text-[#e8eaed]">
-              Use another account
-            </span>
-          </button>
-        )}
-      </div>
+        Continue with Google
+      </button>
+      <p className="text-center text-xs text-muted">
+        If you&apos;re already signed into Google, use the One Tap prompt (top-right) to
+        continue as that account in one click.
+      </p>
     </div>
   );
 }

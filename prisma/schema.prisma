@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model TestProgress {
+  id              Int       @id @default(autoincrement())
+  ownerKey        String    @map("owner_key") @db.VarChar(255)
+  testId          String    @map("test_id") @db.VarChar(120)
+  title           String    @db.VarChar(255)
+  category        String    @db.VarChar(40)
+  status          String    @db.VarChar(32)
+  answeredCount   Int       @default(0) @map("answered_count")
+  totalQuestions  Int       @map("total_questions")
+  correctCount    Int       @default(0) @map("correct_count")
+  progressPercent Int       @default(0) @map("progress_percent")
+  scorePercent    Int       @default(0) @map("score_percent")
+  startedAt       DateTime  @default(now()) @map("started_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  completedAt     DateTime? @map("completed_at")
+
+  @@unique([ownerKey, testId], map: "test_progress_owner_test_key")
+  @@index([ownerKey], map: "idx_test_progress_owner")
+  @@map("test_progress")
+}

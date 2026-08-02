@@ -26,26 +26,28 @@ Without Stripe keys, clicking **Buy Premium** unlocks Premium instantly for loca
 
 | App | Host | URL |
 |-----|------|-----|
-| Next.js frontend | Vercel | https://onlinepracticetest.vercel.app |
+| Next.js frontend | Vercel | https://www.aussiecitizenshipprep.com.au |
 | ASP.NET API/MVC | MonsterASP / runasp | http://citizenshiptest.runasp.net |
 
 Browser calls **same-origin** Next.js `/api/*`. Next.js server routes proxy authenticated requests to ASP.NET using `X-Api-Key` + `X-User-Email`.
 
 ## Auth & Stripe setup
 
-Copy `.env.example` to `.env.local` (and set the same on Vercel):
+Set these on Vercel (Production) and in `.env.local` for local:
 
-- `NEXT_PUBLIC_APP_URL` / `AUTH_URL` → `https://onlinepracticetest.vercel.app` in production
+- `NEXT_PUBLIC_APP_URL` / `AUTH_URL` / `NEXTAUTH_URL` → `https://www.aussiecitizenshipprep.com.au`
 - `ASPNET_API_URL` → `http://citizenshiptest.runasp.net`
 - `ASPNET_API_KEY` → must match ASP.NET `ApiAuth:ApiKey`
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` (or `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`)
 - `AUTH_SECRET`
 - `STRIPE_SECRET_KEY`
 - `PREMIUM_TOKEN_SECRET`
 
-Google redirect URI (production):
+Google Cloud Console → Authorized redirect URIs:
 
-`https://onlinepracticetest.vercel.app/api/auth/callback/google`
+- `https://www.aussiecitizenshipprep.com.au/api/auth/callback/google`
+- `https://onlinepracticetest.vercel.app/api/auth/callback/google`
+- `http://localhost:3000/api/auth/callback/google` (local)
 
 ## Project layout
 

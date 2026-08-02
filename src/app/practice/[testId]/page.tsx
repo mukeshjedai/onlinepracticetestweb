@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { QuizPlayer } from "@/components/QuizPlayer";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getQuestionsForTest, getTestById } from "@/data/tests";
-import { canAccessTest, isPremiumUser } from "@/lib/premium";
+import { canAccessTest, getUserAccessFlags } from "@/lib/premium";
 
 export default async function PracticeTestPage({
   params,
@@ -15,8 +15,9 @@ export default async function PracticeTestPage({
   const test = getTestById(testId);
   if (!test) notFound();
 
-  const isPremium = await isPremiumUser();
-  if (!canAccessTest(test.tier, isPremium)) {
+  const access = await getUserAccessFlags();
+  const isPremium = access.hasPremiumAccess;
+  if (!canAccessTest(test.tier, isPremium, access.hasFreeAccess)) {
     redirect("/premium");
   }
 

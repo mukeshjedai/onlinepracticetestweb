@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { AuthButtons } from "@/components/AuthButtons";
 
@@ -10,6 +11,10 @@ type HeaderProps = {
 
 export function Header({ isPremium = false }: HeaderProps) {
   const [open, setOpen] = useState(false);
+  const { data: session, status } = useSession();
+  // Never show Premium for signed-out users (ignores stale oz_premium cookies).
+  const showPremium =
+    status === "authenticated" && Boolean(session?.user) && isPremium;
 
   return (
     <header className="absolute inset-x-0 top-0 z-40">
@@ -38,7 +43,7 @@ export function Header({ isPremium = false }: HeaderProps) {
           <Link href="/#reviews" className="transition hover:text-gold-soft">
             Reviews
           </Link>
-          {isPremium ? (
+          {showPremium ? (
             <span className="rounded-full border border-gold/50 bg-gold/15 px-3 py-1 text-gold-soft">
               Premium active
             </span>

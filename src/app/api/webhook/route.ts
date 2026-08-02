@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { grantPremiumAccess } from "@/lib/access-api";
 import { getStripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
   const stripe = getStripe();
@@ -22,9 +24,21 @@ export async function POST(req: NextRequest) {
   try {
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     if (event.type === "checkout.session.completed") {
-      // Premium is granted on the success page after session verification.
-      // Webhook kept for server-side fulfilment hooks (email, CRM, etc.).
-      console.info("Premium checkout completed", event.data.object.id);
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.payment_status === "paid" || session.status === "complete") {
+        const email =
+          session.metadata?.userEmail?.toLowerCase() ||
+          session.customer_details?.email?.toLowerCase() ||
+          session.customer_email?.toLowerCase() ||
+          session.client_reference_id?.toLowerCase();
+
+        if (email) {
+          await grantPremiumAccess(email, session.id);
+          console.info("Premium granted in DB for", email, session.id);
+        } else {
+          console.warn("Premium checkout completed without email", session.id);
+        }
+      }
     }
     return NextResponse.json({ received: true });
   } catch (error) {

@@ -13,6 +13,8 @@ import { toProgressView, type TestProgressRecord } from "@/lib/progress-api";
 export function DashboardClient({ isPremium }: { isPremium: boolean }) {
   const { data: session, status } = useSession();
   const { progressMap, loading } = useProgress();
+  const showPremium =
+    status === "authenticated" && Boolean(session?.user) && isPremium;
 
   const records = useMemo(
     () => Object.values(progressMap).sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)),
@@ -133,7 +135,7 @@ export function DashboardClient({ isPremium }: { isPremium: boolean }) {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {isPremium ? (
+          {showPremium ? (
             <span className="rounded-full border border-gold/40 bg-gold/15 px-3 py-1 text-sm font-semibold text-[#8a6a0a]">
               Premium active
             </span>
@@ -201,7 +203,7 @@ export function DashboardClient({ isPremium }: { isPremium: boolean }) {
                 <PracticeTestCard
                   key={test.id}
                   test={test}
-                  locked={test.tier === "premium" && !isPremium}
+                  locked={test.tier === "premium" && !showPremium}
                   progress={toProgressView(progressMap[test.id])}
                   compact={section.id === "full"}
                 />

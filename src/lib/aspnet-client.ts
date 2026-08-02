@@ -5,6 +5,8 @@ type AspNetFetchOptions = {
   method?: string;
   body?: unknown;
   ownerKey?: string | null;
+  /** Override X-User-Email (e.g. Stripe webhook without a browser session). */
+  userEmail?: string | null;
   searchParams?: Record<string, string | undefined>;
 };
 
@@ -40,8 +42,9 @@ export async function aspNetFetch<T>(
     "X-Api-Key": apiKey,
   };
 
-  if (session?.user?.email) {
-    headers["X-User-Email"] = session.user.email;
+  const email = options.userEmail?.trim() || session?.user?.email;
+  if (email) {
+    headers["X-User-Email"] = email.toLowerCase();
   }
 
   if (options.body !== undefined) {

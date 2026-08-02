@@ -87,7 +87,7 @@ function SuccessInner() {
 export default function SuccessPage() {
   return (
     <>
-      <SiteHeader isPremium />
+      <SiteHeader isPremium={false} />
       <main className="section-band px-5 py-16 md:px-8">
         <Suspense fallback={<p className="text-center text-muted">Loading…</p>}>
           <SuccessInner />

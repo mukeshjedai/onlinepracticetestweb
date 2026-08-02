@@ -55,7 +55,14 @@ export function AuthButtons({ variant = "solid" }: AuthButtonsProps) {
         </span>
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={async () => {
+            try {
+              await fetch("/api/access/clear-premium-cookie", { method: "POST" });
+            } catch {
+              // ignore — sign-out should still proceed
+            }
+            await signOut({ callbackUrl: "/" });
+          }}
           className={
             isHero
               ? "rounded-full border border-white/35 px-3 py-1.5 text-sm text-white/90 transition hover:bg-white/10"

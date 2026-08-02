@@ -1,5 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { auth } from "@/auth";
+import { defaultFreeAccess, fetchUserAccess, type UserAccess } from "@/lib/access-api";
 import { PREMIUM_COOKIE } from "./stripe";
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
@@ -30,13 +32,34 @@ export async function verifyPremiumToken(token: string | undefined) {
   }
 }
 
+/**
+ * Source of truth: database flags for a signed-in user.
+ * Guests are always free — leftover oz_premium cookies do not grant access.
+ */
+export async function getUserAccessFlags(): Promise<UserAccess> {
+  const session = await auth();
+  const email = session?.user?.email?.toLowerCase();
+
+  if (!email) {
+    return defaultFreeAccess();
+  }
+
+  const fromDb = await fetchUserAccess(email);
+  if (fromDb) {
+    return fromDb;
+  }
+
+  // API unavailable: stay on free. Do not trust stale cookies.
+  return defaultFreeAccess(email);
+}
+
 export async function isPremiumUser() {
-  const jar = await cookies();
-  const token = jar.get(PREMIUM_COOKIE)?.value;
-  return verifyPremiumToken(token);
+  const access = await getUserAccessFlags();
+  return access.hasPremiumAccess;
 }
 
 export async function grantPremiumCookie(email?: string) {
+  if (!email) return null;
   const token = await createPremiumToken(email);
   const jar = await cookies();
   jar.set(PREMIUM_COOKIE, token, {
@@ -49,6 +72,11 @@ export async function grantPremiumCookie(email?: string) {
   return token;
 }
 
-export function canAccessTest(tier: "free" | "premium", isPremium: boolean) {
-  return tier === "free" || isPremium;
+export function canAccessTest(
+  tier: "free" | "premium",
+  isPremium: boolean,
+  hasFreeAccess = true,
+) {
+  if (tier === "free") return hasFreeAccess;
+  return isPremium;
 }

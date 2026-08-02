@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useMemo } from "react";
 import { PracticeTestCard } from "@/components/PracticeTestCard";
 import { TierBadge } from "@/components/TierBadge";
@@ -14,7 +15,10 @@ type TestAreasProps = {
 };
 
 export function TestAreas({ isPremium }: TestAreasProps) {
+  const { data: session, status } = useSession();
   const { progressMap } = useProgress();
+  const hasPremium =
+    status === "authenticated" && Boolean(session?.user) && isPremium;
 
   const fullTests = useMemo(
     () => allTests.filter((t) => t.category === "full").slice(0, 8),
@@ -57,7 +61,7 @@ export function TestAreas({ isPremium }: TestAreasProps) {
                     <PracticeTestCard
                       key={test.id}
                       test={test}
-                      locked={test.tier === "premium" && !isPremium}
+                      locked={test.tier === "premium" && !hasPremium}
                       progress={toProgressView(progressMap[test.id])}
                     />
                   ))}
@@ -80,7 +84,7 @@ export function TestAreas({ isPremium }: TestAreasProps) {
               <PracticeTestCard
                 key={test.id}
                 test={test}
-                locked={!isPremium}
+                locked={!hasPremium}
                 progress={toProgressView(progressMap[test.id])}
                 compact
               />

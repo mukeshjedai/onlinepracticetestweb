@@ -16,10 +16,11 @@ export default async function PremiumPage({
   const cancelled = params.cancelled === "1";
   const premiumMocks = allTests.filter((t) => t.category === "full" && t.tier === "premium").length;
   const signedIn = Boolean(session?.user);
+  const premiumActive = signedIn && isPremium;
 
   return (
     <>
-      <SiteHeader isPremium={isPremium} />
+      <SiteHeader isPremium={premiumActive} />
       <main className="section-band">
         <section className="mx-auto max-w-5xl px-5 py-14 md:px-8 md:py-20">
           {cancelled && (
@@ -28,7 +29,7 @@ export default async function PremiumPage({
             </p>
           )}
 
-          {isPremium ? (
+          {premiumActive ? (
             <div className="rounded-[1.75rem] border border-success/30 bg-surface p-8 text-center shadow-sm">
               <p className="text-sm font-semibold uppercase tracking-[0.14em] text-success">
                 Premium active

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { grantPremiumAccess } from "@/lib/access-api";
 import { grantPremiumCookie } from "@/lib/premium";
 import { getStripe } from "@/lib/stripe";
 
@@ -30,6 +31,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const email = user.user.email.toLowerCase();
+
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (session.payment_status !== "paid") {
@@ -42,15 +45,22 @@ export async function POST(req: NextRequest) {
       session.metadata?.userEmail?.toLowerCase();
 
     // Ensure the paid session belongs to the signed-in user when email is present
-    if (paidEmail && paidEmail !== user.user.email.toLowerCase()) {
+    if (paidEmail && paidEmail !== email) {
       return NextResponse.json(
         { error: "This payment belongs to a different account. Sign in with the purchase email." },
         { status: 403 },
       );
     }
 
-    await grantPremiumCookie(user.user.email);
-    return NextResponse.json({ ok: true, premium: true });
+    const access = await grantPremiumAccess(email, sessionId);
+    await grantPremiumCookie(email);
+
+    return NextResponse.json({
+      ok: true,
+      premium: true,
+      hasFreeAccess: access.hasFreeAccess,
+      hasPremiumAccess: access.hasPremiumAccess,
+    });
   } catch (error) {
     console.error("Unlock error", error);
     return NextResponse.json({ error: "Unable to verify payment." }, { status: 500 });

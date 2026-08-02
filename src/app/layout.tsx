@@ -37,13 +37,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} h-full`}>
-      <head>
-        {/* Google tag (gtag.js) — loaded once on every page */}
+      <body className="min-h-full antialiased">
+        {/* Google tag (gtag.js) — root layout only; beforeInteractive injects into <head> */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`}
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
         />
-        <Script id="google-ads-gtag" strategy="afterInteractive">
+        <Script id="google-ads-gtag" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -51,8 +51,6 @@ export default function RootLayout({
             gtag('config', '${GOOGLE_ADS_ID}');
           `}
         </Script>
-      </head>
-      <body className="min-h-full antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
